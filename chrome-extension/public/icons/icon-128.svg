@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <path
+    d="M44 95 L59 55 L84 75 L109 55 L124 95 H44Z M59 55 L84 30 L109 55"
+    fill="#FFFFFF"
+    stroke="#FFFFFF"
+    stroke-width="3"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+</svg>

@@ -39,8 +39,8 @@ function withOperaSidebar(manifest) {
   return deepmerge(manifest, {
     sidebar_action: {
       default_panel: 'side-panel/index.html',
-      default_title: 'Monarch',
-      default_icon: 'icon-32.svg',
+      default_title: 'Monarch', // Keep Monarch title
+      default_icon: 'icons/icon-32.png', // Updated
     },
   });
 }
@@ -57,29 +57,30 @@ const manifest = withOperaSidebar(
      * if you want to support multiple languages, you can use the following reference
      * https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/Internationalization
      */
-    name: '__MSG_extensionName__',
+    name: '__MSG_extensionName__', // Will pick up "Monarch" from messages.json
     version: packageJson.version,
-    description: '__MSG_extensionDescription__',
+    description: '__MSG_extensionDescription__', // Will pick up "AI Assistant For Everything"
     host_permissions: ['<all_urls>'],
     permissions: [
-      'storage', 
-      'scripting', 
-      'tabs', 
-      'activeTab', 
+      'storage',
+      'scripting',
+      'tabs',
+      'activeTab',
       'debugger',
       'identity',
-      'identity.email'
+      'identity.email',
+      // Keep other permissions as they were
     ],
     oauth2: {
-      client_id: "${GOOGLE_CLIENT_ID}",
-      scopes: [
-        "https://www.googleapis.com/auth/userinfo.email",
-        "https://www.googleapis.com/auth/userinfo.profile",
-        "https://www.googleapis.com/auth/gmail.readonly",
-        "https://www.googleapis.com/auth/drive.readonly",
-        "https://www.googleapis.com/auth/calendar.readonly",
-        "https://www.googleapis.com/auth/contacts.readonly"
-      ]
+      client_id: process.env.GOOGLE_CLIENT_ID || "YOUR_GOOGLE_CLIENT_ID_FROM_ENV_HERE", // Use env var or placeholder
+      scopes: (process.env.GOOGLE_WORKSPACE_SCOPES || "https://www.googleapis.com/auth/userinfo.email,https://www.googleapis.com/auth/userinfo.profile").split(',')
+      // Example:
+      // scopes: [
+      //   "https://www.googleapis.com/auth/userinfo.email",
+      //   "https://www.googleapis.com/auth/userinfo.profile",
+      //   "https://www.googleapis.com/auth/gmail.readonly",
+      //   "https://www.googleapis.com/auth/drive.readonly"
+      // ]
     },
     options_page: 'options/index.html',
     background: {
@@ -87,11 +88,13 @@ const manifest = withOperaSidebar(
       type: 'module',
     },
     action: {
-      default_icon: 'icon-32.svg',
+      default_icon: 'icons/icon-32.png', // Updated
     },
     icons: {
-      128: 'icon-128.svg',
-      32: 'icon-32.svg'
+      16: 'icons/icon-16.png',   // Updated
+      32: 'icons/icon-32.png',   // Updated
+      48: 'icons/icon-48.png',   // Updated
+      128: 'icons/icon-128.png', // Updated
     },
     content_scripts: [
       {
@@ -102,14 +105,17 @@ const manifest = withOperaSidebar(
     web_accessible_resources: [
       {
         resources: [
-          '*.js',
-          '*.css',
-          '*.svg',
-          'icon-128.svg',
-          'icon-32.svg',
-          'monarch-logo.svg',
+          '*.js', // Keep for other JS files
+          '*.css', // Keep for CSS files
+          '*.svg', // Keep for other SVGs like monarch-logo.svg
+          'monarch-logo.svg', // Explicitly keep if used directly
+          'icons/icon-16.png',   // Added
+          'icons/icon-32.png',   // Added
+          'icons/icon-48.png',   // Added
+          'icons/icon-128.png',  // Added
           'permission/index.html',
           'permission/permission.js',
+          'oauth_callback.html', // Ensure this is accessible if used
         ],
         matches: ['*://*/*'],
       },

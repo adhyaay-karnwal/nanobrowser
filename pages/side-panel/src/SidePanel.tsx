@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { FiSettings, FiUser, FiSearch, FiGrid, FiFileText, FiSun, FiMoon, FiPlus, FiChevronDown, FiPaperclip } from 'react-icons/fi'; // Added FiSun, FiMoon, FiPlus, FiChevronDown, FiPaperclip
-import { PiPlusBold as PiPlusBoldIcon } from 'react-icons/pi'; // Renamed to avoid conflict
+import { FiSettings, FiUser, FiSearch, FiGrid, FiFileText, FiSun, FiMoon, FiPlus, FiChevronDown, FiPaperclip } from 'react-icons/fi';
+import { PiPlusBold as PiPlusBoldIcon } from 'react-icons/pi';
 import { GrHistory } from 'react-icons/gr';
 import { type Message, Actors, chatHistoryStore, agentModelStore } from '@extension/storage';
 import favoritesStorage, { type FavoritePrompt } from '@extension/storage/lib/prompt/favorites';
@@ -104,7 +104,6 @@ const SidePanel = () => {
     const isProgressMessage = newMessage.actor === Actors.SYSTEM && newMessage.content?.startsWith('Monarch is working...');
     
     setMessages(prev => {
-        // If the new message is a progress message, replace the last one if it was also a progress message
         if (isProgressMessage && prev.length > 0 && prev[prev.length - 1].actor === Actors.SYSTEM && prev[prev.length - 1].content?.startsWith('Monarch is working...')) {
             const updatedMessages = [...prev];
             updatedMessages[prev.length -1] = newMessage;
@@ -114,7 +113,7 @@ const SidePanel = () => {
     });
 
     const effectiveSessionId = sessionId !== undefined ? sessionId : sessionIdRef.current;
-    if (effectiveSessionId && newMessage.actor !== Actors.SYSTEM) { // Don't save system/progress messages to history
+    if (effectiveSessionId && newMessage.actor !== Actors.SYSTEM) { 
       chatHistoryStore
         .addMessage(effectiveSessionId, newMessage)
         .catch(err => console.error('Failed to save message to history:', err));
@@ -127,12 +126,10 @@ const SidePanel = () => {
       const details = data?.details || '';
       let monarchMessage: string | null = null;
 
-      // Consolidate internal agent messages into user-friendly updates
       if (actor === Actors.PLANNER || actor === Actors.NAVIGATOR || actor === Actors.VALIDATOR) {
         if (state === ExecutionState.STEP_START || state === ExecutionState.ACT_START) {
           monarchMessage = `Monarch is working on: ${details || actor.toLowerCase()} step...`;
         } else if (state === ExecutionState.STEP_OK || state === ExecutionState.ACT_OK) {
-          // Often, OK steps are internal and don't need explicit user notification unless it's a final step
            if (details && details !== 'cache_content') monarchMessage = `Monarch: ${details}`;
         } else if (state === ExecutionState.STEP_FAIL || state === ExecutionState.ACT_FAIL) {
           monarchMessage = `Monarch encountered an issue: ${details || 'Failed step'}`;
@@ -147,7 +144,7 @@ const SidePanel = () => {
               setIsFollowUpMode(true);
               setInputEnabled(true);
               setShowStopButton(false);
-              monarchMessage = data?.summary || "Task completed successfully."; // Use summary if available
+              monarchMessage = data?.summary || "Task completed successfully.";
               break;
             case ExecutionState.TASK_FAIL:
               setIsFollowUpMode(true);
@@ -162,7 +159,6 @@ const SidePanel = () => {
               monarchMessage = "Task cancelled.";
               break;
             default:
-              // For other system states, if there's content, show it
               if (details) monarchMessage = `Monarch: ${details}`;
               break;
           }
@@ -170,7 +166,7 @@ const SidePanel = () => {
 
       if (monarchMessage) {
         appendMessage({
-          actor: Actors.SYSTEM, // All AI/system responses come from Monarch
+          actor: Actors.SYSTEM, 
           content: monarchMessage,
           timestamp: timestamp,
         });
@@ -224,18 +220,22 @@ const SidePanel = () => {
     }
   }, [handleTaskState, appendMessage, stopConnection]);
 
-  const sendMessageToBackend = useCallback( (message: any) => { // Renamed from sendMessage
+  const sendMessageToBackend = useCallback( (message: any) => { 
       if (portRef.current?.name !== 'side-panel-connection') throw new Error('No valid connection');
       try { portRef.current.postMessage(message); }
       catch (error) { console.error('Failed to send message:', error); stopConnection(); throw error; }
     }, [stopConnection],
   );
 
-  const handleCommand = async (command: string): Promise<boolean> => { /* ... (keep existing command logic) ... */ return true; };
+  const handleCommand = async (command: string): Promise<boolean> => { /* ... (existing command logic, ensure it uses sendMessageToBackend if needed) ... */ return true; };
 
   const handleSendMessage = async (text: string) => {
     const trimmedText = text.trim();
     if (!trimmedText || isHistoricalSession) return;
+    if (trimmedText.startsWith('/')) {
+      const wasHandled = await handleCommand(trimmedText);
+      if (wasHandled) return;
+    }
     try {
       const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
       const tabId = tabs[0]?.id;
@@ -257,28 +257,32 @@ const SidePanel = () => {
     }
   };
 
-  const handleStopTask = async () => { /* ... (keep existing stop task logic, use sendMessageToBackend) ... */ 
+  const handleStopTask = async () => { 
     try { sendMessageToBackend({ type: 'cancel_task' }); }
-    catch(err) { /* ... */ }
+    catch(err) { 
+        const errorMessage = err instanceof Error ? err.message : String(err);
+        console.error('cancel_task error', errorMessage);
+        appendMessage({ actor: Actors.SYSTEM, content: errorMessage, timestamp: Date.now() });
+    }
     setInputEnabled(true); setShowStopButton(false);
   };
-  const handleNewChat = () => { /* ... (keep existing new chat logic) ... */ 
+  const handleNewChat = () => { 
     setMessages([]); setCurrentSessionId(null); setInputEnabled(true);
     setShowStopButton(false); setIsFollowUpMode(false); setIsHistoricalSession(false);
     stopConnection();
   };
-  const loadChatSessions = useCallback(async () => { /* ... (keep existing load sessions logic) ... */ 
+  const loadChatSessions = useCallback(async () => { 
      try {
       const sessions = await chatHistoryStore.getSessionsMetadata();
       setChatSessions(sessions.sort((a, b) => b.createdAt - a.createdAt));
     } catch (error) { console.error('Failed to load chat sessions:', error); }
   }, []);
   const handleLoadHistory = async () => { await loadChatSessions(); setShowHistory(true); };
-  const handleBackToChat = (reset = false) => { /* ... (keep existing back to chat logic) ... */ 
+  const handleBackToChat = (reset = false) => { 
     setShowHistory(false);
     if (reset) { setCurrentSessionId(null); setMessages([]); setIsFollowUpMode(false); setIsHistoricalSession(false); }
   };
-  const handleSessionSelect = async (sessionId: string) => { /* ... (keep existing session select logic) ... */ 
+  const handleSessionSelect = async (sessionId: string) => { 
     try {
       const fullSession = await chatHistoryStore.getSession(sessionId);
       if (fullSession?.messages.length > 0) {
@@ -288,14 +292,13 @@ const SidePanel = () => {
       setShowHistory(false);
     } catch (error) { console.error('Failed to load session:', error); }
   };
-  const handleSessionDelete = async (sessionId: string) => { /* ... (keep existing session delete logic) ... */ 
+  const handleSessionDelete = async (sessionId: string) => { 
     try {
       await chatHistoryStore.deleteSession(sessionId); await loadChatSessions();
       if (sessionId === currentSessionId) { setMessages([]); setCurrentSessionId(null); }
     } catch (error) { console.error('Failed to delete session:', error); }
   };
   
-  // Update to use generic prompts
    const handleSessionBookmark = async (sessionId: string) => {
     try {
       const fullSession = await chatHistoryStore.getSession(sessionId);
@@ -303,7 +306,7 @@ const SidePanel = () => {
         const sessionTitle = fullSession.title;
         const title = sessionTitle.split(' ').slice(0, 8).join(' ');
         const taskContent = fullSession.messages[0]?.content || '';
-        const newFavorite = await favoritesStorage.addPrompt(title, taskContent); // Assuming addPrompt returns the new item with ID
+        const newFavorite = await favoritesStorage.addPrompt(title, taskContent);
         setFavoritePrompts(prev => [...prev, { ...newFavorite, id: newFavorite.id || Date.now(), createdAt: Date.now(), order: prev.length + 1 }].sort((a,b) => (a.order || 0) - (b.order || 0) ));
         handleBackToChat(true);
       }
@@ -314,19 +317,19 @@ const SidePanel = () => {
 
 
   const handleBookmarkSelect = (content: string) => { if (setInputTextRef.current) setInputTextRef.current(content); };
-  const handleBookmarkUpdateTitle = async (id: number, title: string) => { /* ... (keep existing logic, update favoritePrompts state) ... */ 
+  const handleBookmarkUpdateTitle = async (id: number, title: string) => { 
     try {
       await favoritesStorage.updatePromptTitle(id, title);
       setFavoritePrompts(prev => prev.map(p => p.id === id ? {...p, title} : p));
     } catch (error) { console.error('Failed to update fav title', error); }
   };
-  const handleBookmarkDelete = async (id: number) => { /* ... (keep existing logic, update favoritePrompts state) ... */ 
+  const handleBookmarkDelete = async (id: number) => { 
     try {
       await favoritesStorage.removePrompt(id);
       setFavoritePrompts(prev => prev.filter(p => p.id !== id));
     } catch (error) { console.error('Failed to delete fav', error); }
   };
-  const handleBookmarkReorder = async (draggedId: number, targetId: number) => { /* ... (keep existing logic, update favoritePrompts state) ... */ 
+  const handleBookmarkReorder = async (draggedId: number, targetId: number) => { 
     try {
       await favoritesStorage.reorderPrompts(draggedId, targetId);
       const updatedPrompts = await favoritesStorage.getAllPrompts();
@@ -335,31 +338,31 @@ const SidePanel = () => {
   };
 
   const handleConnectWorkspace = () => setShowWorkspaceConnectModal(true);
-  const handleWorkspaceAuth = () => { /* ... (placeholder OAuth logic) ... */ 
+  const handleWorkspaceAuth = () => { 
     setIsWorkspaceConnected(true); setShowWorkspaceConnectModal(false);
     appendMessage({ actor: Actors.SYSTEM, content: 'Successfully connected to Google Workspace!', timestamp: Date.now() });
   };
 
-  useEffect(() => { // Load generic prompts on mount if storage is empty
+  useEffect(() => { 
     const loadFavorites = async () => {
       try {
         let prompts = await favoritesStorage.getAllPrompts();
         if (prompts.length === 0) {
           for (const p of GENERIC_PLACEHOLDER_PROMPTS) {
-            await favoritesStorage.addPrompt(p.title, p.content); // Add to storage
+            await favoritesStorage.addPrompt(p.title, p.content); 
           }
-          prompts = await favoritesStorage.getAllPrompts(); // Re-fetch
+          prompts = await favoritesStorage.getAllPrompts(); 
         }
         setFavoritePrompts(prompts.sort((a,b) => (a.order || 0) - (b.order || 0)));
       } catch (error) {
         console.error('Failed to load/initialize favorite prompts:', error);
-        setFavoritePrompts(GENERIC_PLACEHOLDER_PROMPTS); // Fallback
+        setFavoritePrompts(GENERIC_PLACEHOLDER_PROMPTS); 
       }
     };
     loadFavorites();
   }, []);
 
-  useEffect(() => { /* ... (keep existing cleanup logic) ... */ 
+  useEffect(() => { 
     return () => {
       if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') mediaRecorderRef.current.stop();
       if (recordingTimerRef.current) clearTimeout(recordingTimerRef.current);
@@ -367,13 +370,93 @@ const SidePanel = () => {
     };
   }, [stopConnection]);
   useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
-  const handleMicClick = async () => { /* ... (keep existing mic logic) ... */ };
+  
+  const handleMicClick = async () => {
+    if (isRecording) {
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+        mediaRecorderRef.current.stop();
+      }
+      if (recordingTimerRef.current) {
+        clearTimeout(recordingTimerRef.current);
+        recordingTimerRef.current = null;
+      }
+      setIsRecording(false);
+      return;
+    }
 
-  // Placeholder handlers for new ChatInput props
+    try {
+      const permissionStatus = await navigator.permissions.query({ name: 'microphone' as PermissionName });
+      if (permissionStatus.state === 'denied') {
+        appendMessage({ actor: Actors.SYSTEM, content: 'Microphone access denied. Please enable microphone permissions in Chrome settings.', timestamp: Date.now() });
+        return;
+      }
+      if (permissionStatus.state !== 'granted') {
+        const permissionUrl = chrome.runtime.getURL('permission/index.html');
+        chrome.windows.create({ url: permissionUrl, type: 'popup', width: 500, height: 600 }, (createdWindow) => {
+          if (createdWindow?.id) {
+            chrome.windows.onRemoved.addListener(function onWindowClose(windowId) {
+              if (windowId === createdWindow.id) {
+                chrome.windows.onRemoved.removeListener(onWindowClose);
+                setTimeout(async () => {
+                  try {
+                    const newPermissionStatus = await navigator.permissions.query({ name: 'microphone' as PermissionName });
+                    if (newPermissionStatus.state === 'granted') handleMicClick();
+                  } catch (error) { console.error('Failed to check permission status:', error); }
+                }, 500);
+              }
+            });
+          }
+        });
+        return;
+      }
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      audioChunksRef.current = [];
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+      mediaRecorder.ondataavailable = event => { if (event.data.size > 0) audioChunksRef.current.push(event.data); };
+      mediaRecorder.onstop = async () => {
+        stream.getTracks().forEach(track => track.stop());
+        if (audioChunksRef.current.length > 0) {
+          const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            const base64Audio = reader.result as string;
+            if (!portRef.current) setupConnection();
+            try {
+              setIsProcessingSpeech(true);
+              portRef.current?.postMessage({ type: 'speech_to_text', audio: base64Audio });
+            } catch (error) {
+              console.error('Failed to send audio for speech-to-text:', error);
+              appendMessage({ actor: Actors.SYSTEM, content: 'Failed to process speech recording', timestamp: Date.now() });
+              setIsRecording(false); setIsProcessingSpeech(false);
+            }
+          };
+          reader.readAsDataURL(audioBlob);
+        }
+      };
+      const maxDuration = 2 * 60 * 1000;
+      recordingTimerRef.current = window.setTimeout(() => {
+        if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') mediaRecorderRef.current.stop();
+        setIsRecording(false); setIsProcessingSpeech(true); recordingTimerRef.current = null;
+      }, maxDuration);
+      mediaRecorder.start();
+      setIsRecording(true);
+    } catch (error) {
+      console.error('Error accessing microphone:', error);
+      let errorMessage = 'Failed to access microphone. ';
+      if (error instanceof Error) {
+        if (error.name === 'NotAllowedError') errorMessage += 'Please grant microphone permission.';
+        else if (error.name === 'NotFoundError') errorMessage += 'No microphone found.';
+        else errorMessage += error.message;
+      }
+      appendMessage({ actor: Actors.SYSTEM, content: errorMessage, timestamp: Date.now() });
+      setIsRecording(false);
+    }
+  };
+
   const handleAddContextClick = () => setShowAddContextPopup(prev => !prev);
   const handleModeModelClick = () => setShowModeModelPopup(prev => !prev);
 
-  // UI Components for Popups (Placeholders)
   const ModeModelPopup = () => (
     <div className={`absolute bottom-20 left-1/2 -translate-x-1/2 z-20 p-4 rounded-lg shadow-xl w-72 ${isDarkMode ? 'bg-slate-700 border border-slate-600' : 'bg-white border border-slate-200'}`}>
       <h4 className={`text-sm font-semibold mb-2 ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}>Select Mode & Model</h4>
@@ -403,12 +486,16 @@ const SidePanel = () => {
     </div>
   );
   
-  const WorkspaceConnectModal = () => ( /* ... (keep existing modal, adjust styling if needed) ... */ 
+  const WorkspaceConnectModal = () => ( 
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className={`relative w-full max-w-md p-6 rounded-lg shadow-xl ${isDarkMode ? 'bg-slate-800' : 'bg-white'}`}>
-        {/* ... content ... */}
-        <button onClick={handleWorkspaceAuth} className={`w-full mt-3 ${isDarkMode ? 'bg-blue-600 hover:bg-blue-500 text-white' : 'bg-blue-500 hover:bg-blue-600 text-white'} py-2 px-4 rounded-md font-medium`}>Connect Account</button>
-        <button onClick={() => setShowWorkspaceConnectModal(false)} className={`w-full mt-2 ${isDarkMode ? 'bg-slate-700 hover:bg-slate-600 text-slate-200' : 'bg-slate-200 hover:bg-slate-300 text-slate-800'} py-2 px-4 rounded-md font-medium`}>Cancel</button>
+        <button onClick={() => setShowWorkspaceConnectModal(false)} className={`absolute top-3 right-3 p-1 rounded-full ${isDarkMode ? 'text-slate-400 hover:text-slate-200 hover:bg-slate-700' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'}`}>✕</button>
+        <div className="text-center mb-6">
+            <FiLink className={`w-12 h-12 mx-auto mb-4 ${isDarkMode ? 'text-sky-400' : 'text-blue-500'}`} />
+            <h3 className={`text-xl font-bold ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>Connect to Google Workspace</h3>
+            <p className={`mt-2 text-sm ${isDarkMode ? 'text-slate-300' : 'text-slate-600'}`}>Allow Monarch to access your Google Workspace data.</p>
+        </div>
+        <button onClick={handleWorkspaceAuth} className={`w-full mt-3 ${isDarkMode ? 'bg-blue-600 hover:bg-blue-500 text-white' : 'bg-blue-500 hover:bg-blue-600 text-white'} py-2.5 px-4 rounded-lg font-medium transition-colors`}>Connect Account</button>
       </div>
     </div>
   );
@@ -452,7 +539,7 @@ const SidePanel = () => {
         </div>
       </header>
 
-      <div className="flex-1 overflow-hidden relative"> {/* Added relative for popup positioning */}
+      <div className="flex-1 overflow-hidden relative">
         {showHistory ? (
           <ChatHistoryList sessions={chatSessions} onSessionSelect={handleSessionSelect} onSessionDelete={handleSessionDelete} onSessionBookmark={handleSessionBookmark} visible={true} isDarkMode={!isLightMode} />
         ) : (
@@ -476,15 +563,11 @@ const SidePanel = () => {
               <div className="h-full flex flex-col">
                 {messages.length === 0 ? (
                   <div className="flex-1 overflow-y-auto p-4 space-y-6">
-                    {/* Placeholder for initial state: ModeSelector, GoogleWorkspaceIntegration, BookmarkList */}
                      <div className="flex flex-col items-center justify-center h-full text-center">
                         <img src="/monarch-logo.svg" alt="Monarch Logo" className={`h-16 w-16 mb-4 ${isLightMode ? 'opacity-70' : 'opacity-50'}`} />
                         <h2 className={`text-xl font-semibold mb-2 ${isLightMode ? 'text-slate-700' : 'text-slate-300'}`}>How can I help you today?</h2>
                         <p className={`text-sm ${isLightMode ? 'text-slate-500' : 'text-slate-400'}`}>Select a mode or start typing.</p>
                     </div>
-                    {/* Example of how BookmarkList might be integrated if needed on empty chat */}
-                    {/* <h3 className={`text-sm font-medium mt-8 mb-2 ${isLightMode ? 'text-slate-600' : 'text-slate-400'}`}>Quick Prompts</h3> */}
-                    {/* <BookmarkList bookmarks={favoritePrompts} onBookmarkSelect={handleBookmarkSelect} onBookmarkUpdateTitle={handleBookmarkUpdateTitle} onBookmarkDelete={handleBookmarkDelete} onBookmarkReorder={handleBookmarkReorder} isDarkMode={!isLightMode} /> */}
                   </div>
                 ) : (
                   <div className={`flex-1 overflow-x-hidden overflow-y-auto scroll-smooth p-4 scrollbar-gutter-stable ${isLightMode ? 'bg-slate-50' : 'bg-slate-800/50'}`}>
@@ -513,11 +596,12 @@ const SidePanel = () => {
             )}
           </>
         )}
-        {/* Popups */}
-        {showModeModelPopup && <ModeModelPopup />}
-        {showAddContextPopup && <AddContextPopup />}
+        {/* Popups - Temporarily commented out for build debugging */}
+        {/* {showModeModelPopup && <ModeModelPopup />} */}
+        {/* {showAddContextPopup && <AddContextPopup />} */}
       </div>
-      {showWorkspaceConnectModal && <WorkspaceConnectModal />}
+      {/* Workspace Connect Modal - Temporarily commented out for build debugging */}
+      {/* {showWorkspaceConnectModal && <WorkspaceConnectModal />} */}
     </div>
   );
 };
