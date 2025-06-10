@@ -40,7 +40,7 @@ function withOperaSidebar(manifest) {
     sidebar_action: {
       default_panel: 'side-panel/index.html',
       default_title: 'Monarch', // Keep Monarch title
-      default_icon: 'icons/icon-32.png', // Updated
+      default_icon: 'icons/icon-32.svg', // Updated to SVG
     },
   });
 }
@@ -88,13 +88,13 @@ const manifest = withOperaSidebar(
       type: 'module',
     },
     action: {
-      default_icon: 'icons/icon-32.png', // Updated
+      default_icon: 'icons/icon-32.svg', // Updated to SVG
     },
     icons: {
-      16: 'icons/icon-16.png',   // Updated
-      32: 'icons/icon-32.png',   // Updated
-      48: 'icons/icon-48.png',   // Updated
-      128: 'icons/icon-128.png', // Updated
+      16: 'icons/icon-16.svg',   // Updated to SVG
+      32: 'icons/icon-32.svg',   // Updated to SVG
+      48: 'icons/icon-48.svg',   // Updated to SVG
+      128: 'icons/icon-128.svg', // Updated to SVG
     },
     content_scripts: [
       {
@@ -107,12 +107,12 @@ const manifest = withOperaSidebar(
         resources: [
           '*.js', // Keep for other JS files
           '*.css', // Keep for CSS files
-          '*.svg', // Keep for other SVGs like monarch-logo.svg
-          'monarch-logo.svg', // Explicitly keep if used directly
-          'icons/icon-16.png',   // Added
-          'icons/icon-32.png',   // Added
-          'icons/icon-48.png',   // Added
-          'icons/icon-128.png',  // Added
+          // '*.svg', // Keep for other SVGs like monarch-logo.svg - this is too broad, be specific
+          'monarch-logo.svg', // Explicitly keep if used directly from web_accessible_resources
+          'icons/icon-16.svg',   // Added SVG
+          'icons/icon-32.svg',   // Added SVG
+          'icons/icon-48.svg',   // Added SVG
+          'icons/icon-128.svg',  // Added SVG
           'permission/index.html',
           'permission/permission.js',
           'oauth_callback.html', // Ensure this is accessible if used
