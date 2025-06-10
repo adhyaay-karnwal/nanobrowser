@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <!-- Dark blue gradient background -->
+  <defs>
+    <linearGradient id="darkBlueGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0a2351" />
+      <stop offset="100%" stop-color="#1e3a70" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Background circle -->
+  <circle cx="64" cy="64" r="64" fill="url(#darkBlueGradient)" />
+  
+  <!-- Crown with 3 points/stripes -->
+  <path 
+    d="M32 80L48 48L64 64L80 48L96 80H32Z M48 48L64 32L80 48" 
+    stroke="#FFFFFF" 
+    stroke-width="6" 
+    stroke-linecap="round" 
+    stroke-linejoin="round"
+    fill="none"
+  />
+</svg>

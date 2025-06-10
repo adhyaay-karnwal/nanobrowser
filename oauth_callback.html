@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-TF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monarch Authentication</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: linear-gradient(135deg, #0a2351 0%, #1e3a70 100%);
+            color: #e0e0e0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+            text-align: center;
+        }
+        .container {
+            background-color: rgba(255, 255, 255, 0.05);
+            padding: 30px 40px;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .logo {
+            width: 60px;
+            height: 60px;
+            margin-bottom: 20px;
+            /* Simple Crown SVG Placeholder */
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="%23FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 18L7 10L12 14L17 10L20 18H4Z M7 10L12 5L17 10" /></svg>');
+            background-repeat: no-repeat;
+            background-position: center;
+            background-size: contain;
+        }
+        h1 {
+            font-size: 24px;
+            margin-bottom: 10px;
+            color: #ffffff;
+        }
+        p {
+            font-size: 16px;
+            line-height: 1.6;
+        }
+        .status-icon {
+            font-size: 32px;
+            margin-bottom: 15px;
+        }
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.2);
+            border-left-color: #ffffff;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px auto;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .success { color: #4ade80; } /* Tailwind green-400 */
+        .error { color: #f87171; } /* Tailwind red-400 */
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo"></div>
+        <h1>Monarch Authentication</h1>
+        <div id="message">
+            <div class="spinner"></div>
+            <p>Processing authentication, please wait...</p>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const messageDiv = document.getElementById('message');
+            let autoCloseTimeout;
+
+            const displayMessage = (text, type) => {
+                clearTimeout(autoCloseTimeout);
+                let iconHtml = '';
+                if (type === 'success') {
+                    iconHtml = '<div class="status-icon success">✓</div>';
+                } else if (type === 'error') {
+                    iconHtml = '<div class="status-icon error">✕</div>';
+                } else {
+                    iconHtml = '<div class="spinner"></div>';
+                }
+                messageDiv.innerHTML = `${iconHtml}<p class="${type}">${text}</p>`;
+
+                // Automatically close the window after a few seconds for success/error
+                if (type === 'success' || type === 'error') {
+                    autoCloseTimeout = setTimeout(() => {
+                        window.close();
+                    }, 3000); // Close after 3 seconds
+                }
+            };
+
+            try {
+                const hash = window.location.hash.substring(1); // Remove #
+                const params = new URLSearchParams(hash);
+                const accessToken = params.get('access_token');
+                const error = params.get('error');
+                const errorDescription = params.get('error_description');
+
+                // Also check query parameters for error, in case the server redirects with ?error=...
+                const queryParams = new URLSearchParams(window.location.search);
+                const queryError = queryParams.get('error');
+                const queryErrorDescription = queryParams.get('error_description');
+
+                if (accessToken) {
+                    // Send token to background script
+                    if (chrome && chrome.runtime && chrome.runtime.sendMessage) {
+                        chrome.runtime.sendMessage({
+                            type: 'OAUTH_TOKEN_RECEIVED',
+                            payload: { token: accessToken }
+                        }, response => {
+                            if (chrome.runtime.lastError) {
+                                console.error('Error sending token to background:', chrome.runtime.lastError.message);
+                                displayMessage('Authentication processed, but failed to notify the extension. Please try again or contact support. Error: ' + chrome.runtime.lastError.message, 'error');
+                            } else if (response && response.success) {
+                                displayMessage('Authentication successful! You can now close this window.', 'success');
+                            } else {
+                                displayMessage('Authentication processed, but there was an issue with the extension. Details: ' + (response ? response.message : 'No response'), 'error');
+                            }
+                        });
+                    } else {
+                         displayMessage('Error: Chrome runtime is not available. This page must be opened within the Monarch extension context.', 'error');
+                    }
+                } else if (error || queryError) {
+                    const finalError = error || queryError;
+                    const finalErrorDescription = errorDescription || queryErrorDescription || 'No specific error description provided.';
+                    console.error('OAuth Error:', finalError, finalErrorDescription);
+                    displayMessage(`Authentication failed: ${finalError}. ${finalErrorDescription}`, 'error');
+                     if (chrome && chrome.runtime && chrome.runtime.sendMessage) {
+                        chrome.runtime.sendMessage({
+                            type: 'OAUTH_ERROR_RECEIVED',
+                            payload: { error: finalError, errorDescription: finalErrorDescription }
+                        });
+                    }
+                } else {
+                    displayMessage('Invalid authentication callback. No token or error found.', 'error');
+                }
+            } catch (e) {
+                console.error('Error processing OAuth callback:', e);
+                displayMessage('An unexpected error occurred during authentication. ' + e.message, 'error');
+            }
+        });
+    </script>
+</body>
+</html>

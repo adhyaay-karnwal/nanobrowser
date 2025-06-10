@@ -1,7 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { RxDiscordLogo } from 'react-icons/rx';
-import { FiSettings } from 'react-icons/fi';
+import { FiSettings, FiUser, FiSearch, FiGrid, FiFileText, FiInfo } from 'react-icons/fi';
 import { PiPlusBold } from 'react-icons/pi';
 import { GrHistory } from 'react-icons/gr';
 import { type Message, Actors, chatHistoryStore, agentModelStore } from '@extension/storage';
@@ -29,11 +28,14 @@ const SidePanel = () => {
   const [chatSessions, setChatSessions] = useState<Array<{ id: string; title: string; createdAt: number }>>([]);
   const [isFollowUpMode, setIsFollowUpMode] = useState(false);
   const [isHistoricalSession, setIsHistoricalSession] = useState(false);
-  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(true); // Default to dark mode for professional look
   const [favoritePrompts, setFavoritePrompts] = useState<FavoritePrompt[]>([]);
   const [hasConfiguredModels, setHasConfiguredModels] = useState<boolean | null>(null); // null = loading, false = no models, true = has models
   const [isRecording, setIsRecording] = useState(false);
   const [isProcessingSpeech, setIsProcessingSpeech] = useState(false);
+  const [selectedMode, setSelectedMode] = useState<'agent' | 'research'>('agent'); // New state for mode selection
+  const [showWorkspaceConnect, setShowWorkspaceConnect] = useState(false); // New state for Google Workspace connection
+  const [isWorkspaceConnected, setIsWorkspaceConnected] = useState(false); // Track if Google Workspace is connected
   const sessionIdRef = useRef<string | null>(null);
   const portRef = useRef<chrome.runtime.Port | null>(null);
   const heartbeatIntervalRef = useRef<number | null>(null);
@@ -483,6 +485,7 @@ const SidePanel = () => {
           task: text,
           taskId: sessionIdRef.current,
           tabId,
+          mode: selectedMode, // Include the selected mode
         });
         console.log('follow_up_task sent', text, tabId, sessionIdRef.current);
       } else {
@@ -492,6 +495,7 @@ const SidePanel = () => {
           task: text,
           taskId: sessionIdRef.current,
           tabId,
+          mode: selectedMode, // Include the selected mode
         });
         console.log('new_task sent', text, tabId, sessionIdRef.current);
       }
@@ -663,6 +667,26 @@ const SidePanel = () => {
     } catch (error) {
       console.error('Failed to reorder favorite prompts:', error);
     }
+  };
+
+  // Handle Google Workspace connection
+  const handleConnectWorkspace = () => {
+    // This would be replaced with actual OAuth flow
+    setShowWorkspaceConnect(true);
+  };
+
+  const handleWorkspaceAuth = () => {
+    // Simulate successful connection
+    setIsWorkspaceConnected(true);
+    setShowWorkspaceConnect(false);
+    
+    // In a real implementation, this would trigger the OAuth flow
+    // and handle the authentication process
+    appendMessage({
+      actor: Actors.SYSTEM,
+      content: 'Successfully connected to Google Workspace!',
+      timestamp: Date.now(),
+    });
   };
 
   // Load favorite prompts from storage
@@ -865,22 +889,201 @@ const SidePanel = () => {
     }
   };
 
+  // Mode selector component
+  const ModeSelector = () => (
+    <div className="flex flex-col gap-3 mb-4 mt-2 px-2">
+      <h3 className={`text-lg font-medium ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>Select Mode</h3>
+      <div className="grid grid-cols-2 gap-3">
+        <button
+          onClick={() => setSelectedMode('agent')}
+          className={`flex flex-col items-center justify-center p-4 rounded-lg transition-all ${
+            selectedMode === 'agent'
+              ? 'bg-gradient-to-br from-blue-800 to-blue-600 text-white shadow-lg'
+              : isDarkMode
+                ? 'bg-slate-800 text-gray-300 hover:bg-slate-700'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+          }`}
+        >
+          <FiGrid className="h-6 w-6 mb-2" />
+          <span className="font-medium">Agent Mode</span>
+          <span className="text-xs mt-1 opacity-80">General assistance</span>
+        </button>
+        <button
+          onClick={() => setSelectedMode('research')}
+          className={`flex flex-col items-center justify-center p-4 rounded-lg transition-all ${
+            selectedMode === 'research'
+              ? 'bg-gradient-to-br from-blue-800 to-blue-600 text-white shadow-lg'
+              : isDarkMode
+                ? 'bg-slate-800 text-gray-300 hover:bg-slate-700'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+          }`}
+        >
+          <FiSearch className="h-6 w-6 mb-2" />
+          <span className="font-medium">Research Mode</span>
+          <span className="text-xs mt-1 opacity-80">Find & analyze info</span>
+        </button>
+      </div>
+    </div>
+  );
+
+  // Google Workspace integration component
+  const GoogleWorkspaceIntegration = () => (
+    <div className={`mt-6 p-4 rounded-lg ${isDarkMode ? 'bg-slate-800' : 'bg-gray-100'}`}>
+      <div className="flex items-center justify-between mb-3">
+        <h3 className={`text-lg font-medium ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
+          Google Workspace
+        </h3>
+        {isWorkspaceConnected ? (
+          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+            Connected
+          </span>
+        ) : (
+          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+            Not Connected
+          </span>
+        )}
+      </div>
+      
+      {!isWorkspaceConnected ? (
+        <button
+          onClick={handleConnectWorkspace}
+          className="w-full mt-2 flex items-center justify-center gap-2 bg-white text-gray-800 hover:bg-gray-50 px-4 py-2 rounded-md font-medium transition-colors"
+        >
+          <svg className="w-5 h-5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 0C5.372 0 0 5.372 0 12s5.372 12 12 12 12-5.372 12-12S18.628 0 12 0zm6.29 16.29H5.71V7.71h12.58v8.58z" fill="#4285F4" />
+            <path d="M18.29 7.71H5.71v8.58h12.58V7.71z" fill="#FFFFFF" />
+            <path d="M15.714 12L12 14.143 8.286 12V10.714L12 8.571l3.714 2.143V12z" fill="#EA4335" />
+          </svg>
+          Connect Workspace
+        </button>
+      ) : (
+        <div className="space-y-2 mt-3">
+          <div className={`flex items-center gap-2 p-2 rounded ${isDarkMode ? 'bg-slate-700' : 'bg-white'}`}>
+            <FiFileText className="text-blue-500" />
+            <span className={isDarkMode ? 'text-gray-200' : 'text-gray-800'}>Google Drive</span>
+          </div>
+          <div className={`flex items-center gap-2 p-2 rounded ${isDarkMode ? 'bg-slate-700' : 'bg-white'}`}>
+            <svg className="w-4 h-4" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path d="M24 5.457v13.909c0 .904-.732 1.636-1.636 1.636h-3.819V11.73L12 16.64l-6.545-4.91v9.273H1.636A1.636 1.636 0 0 1 0 19.366V5.457c0-2.023 2.309-3.178 3.927-1.964L5.455 4.64 12 9.548l6.545-4.91 1.528-1.145C21.69 2.28 24 3.434 24 5.457z" fill="#D14836"/>
+            </svg>
+            <span className={isDarkMode ? 'text-gray-200' : 'text-gray-800'}>Gmail</span>
+          </div>
+          <div className={`flex items-center gap-2 p-2 rounded ${isDarkMode ? 'bg-slate-700' : 'bg-white'}`}>
+            <svg className="w-4 h-4" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path d="M1.5,0 L22.5,0 C23.3284271,0 24,0.671572875 24,1.5 L24,22.5 C24,23.3284271 23.3284271,24 22.5,24 L1.5,24 C0.671572875,24 0,23.3284271 0,22.5 L0,1.5 C0,0.671572875 0.671572875,0 1.5,0 Z" fill="#4285F4"/>
+              <path d="M12,11 C13.1045695,11 14,10.1045695 14,9 C14,7.8954305 13.1045695,7 12,7 C10.8954305,7 10,7.8954305 10,9 C10,10.1045695 10.8954305,11 12,11 Z" fill="#FFFFFF"/>
+              <path d="M7.00280899,14.4964985 C7.00280899,12.5686983 9.13623897,11 11.9964085,11 C14.856578,11 16.9900079,12.5686983 16.9900079,14.4964985 L16.9900079,18 L7.00280899,18 L7.00280899,14.4964985 Z" fill="#FFFFFF"/>
+            </svg>
+            <span className={isDarkMode ? 'text-gray-200' : 'text-gray-800'}>Contacts</span>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
+  // Google Workspace connection modal
+  const WorkspaceConnectModal = () => (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className={`relative w-full max-w-md p-6 rounded-lg shadow-xl ${isDarkMode ? 'bg-slate-800' : 'bg-white'}`}>
+        <button 
+          onClick={() => setShowWorkspaceConnect(false)}
+          className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+        >
+          ✕
+        </button>
+        <div className="text-center mb-6">
+          <svg className="w-16 h-16 mx-auto mb-4" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 0C5.372 0 0 5.372 0 12s5.372 12 12 12 12-5.372 12-12S18.628 0 12 0zm6.29 16.29H5.71V7.71h12.58v8.58z" fill="#4285F4" />
+            <path d="M18.29 7.71H5.71v8.58h12.58V7.71z" fill="#FFFFFF" />
+            <path d="M15.714 12L12 14.143 8.286 12V10.714L12 8.571l3.714 2.143V12z" fill="#EA4335" />
+          </svg>
+          <h3 className={`text-xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
+            Connect to Google Workspace
+          </h3>
+          <p className={`mt-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+            Allow Monarch to access your Google Workspace data to provide personalized assistance.
+          </p>
+        </div>
+        
+        <div className="space-y-4">
+          <div className={`flex items-center p-3 rounded-lg ${isDarkMode ? 'bg-slate-700' : 'bg-gray-100'}`}>
+            <svg className="w-6 h-6 mr-3" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path d="M24 5.457v13.909c0 .904-.732 1.636-1.636 1.636h-3.819V11.73L12 16.64l-6.545-4.91v9.273H1.636A1.636 1.636 0 0 1 0 19.366V5.457c0-2.023 2.309-3.178 3.927-1.964L5.455 4.64 12 9.548l6.545-4.91 1.528-1.145C21.69 2.28 24 3.434 24 5.457z" fill="#D14836"/>
+            </svg>
+            <div className="flex-1">
+              <p className={`font-medium ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>Gmail</p>
+              <p className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Read emails and drafts</p>
+            </div>
+          </div>
+          
+          <div className={`flex items-center p-3 rounded-lg ${isDarkMode ? 'bg-slate-700' : 'bg-gray-100'}`}>
+            <svg className="w-6 h-6 mr-3" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path d="M1.5,0 L22.5,0 C23.3284271,0 24,0.671572875 24,1.5 L24,22.5 C24,23.3284271 23.3284271,24 22.5,24 L1.5,24 C0.671572875,24 0,23.3284271 0,22.5 L0,1.5 C0,0.671572875 0.671572875,0 1.5,0 Z" fill="#0F9D58"/>
+              <path d="M17,17 L7,17 L7,7 L12,7 L12,10 L17,10 L17,17 Z" fill="#FFFFFF"/>
+            </svg>
+            <div className="flex-1">
+              <p className={`font-medium ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>Google Drive</p>
+              <p className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Access files and documents</p>
+            </div>
+          </div>
+          
+          <div className={`flex items-center p-3 rounded-lg ${isDarkMode ? 'bg-slate-700' : 'bg-gray-100'}`}>
+            <svg className="w-6 h-6 mr-3" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path d="M1.5,0 L22.5,0 C23.3284271,0 24,0.671572875 24,1.5 L24,22.5 C24,23.3284271 23.3284271,24 22.5,24 L1.5,24 C0.671572875,24 0,23.3284271 0,22.5 L0,1.5 C0,0.671572875 0.671572875,0 1.5,0 Z" fill="#4285F4"/>
+              <path d="M12,11 C13.1045695,11 14,10.1045695 14,9 C14,7.8954305 13.1045695,7 12,7 C10.8954305,7 10,7.8954305 10,9 C10,10.1045695 10.8954305,11 12,11 Z" fill="#FFFFFF"/>
+              <path d="M7.00280899,14.4964985 C7.00280899,12.5686983 9.13623897,11 11.9964085,11 C14.856578,11 16.9900079,12.5686983 16.9900079,14.4964985 L16.9900079,18 L7.00280899,18 L7.00280899,14.4964985 Z" fill="#FFFFFF"/>
+            </svg>
+            <div className="flex-1">
+              <p className={`font-medium ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>Contacts</p>
+              <p className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Access contact information</p>
+            </div>
+          </div>
+        </div>
+        
+        <div className="mt-6 flex flex-col gap-3">
+          <button
+            onClick={handleWorkspaceAuth}
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-md font-medium transition-colors"
+          >
+            Connect Account
+          </button>
+          <button
+            onClick={() => setShowWorkspaceConnect(false)}
+            className={`w-full py-2 px-4 rounded-md font-medium ${
+              isDarkMode 
+                ? 'bg-slate-700 hover:bg-slate-600 text-gray-200' 
+                : 'bg-gray-200 hover:bg-gray-300 text-gray-800'
+            } transition-colors`}
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
   return (
     <div>
       <div
-        className={`flex h-screen flex-col ${isDarkMode ? 'bg-slate-900' : "bg-[url('/bg.jpg')] bg-cover bg-no-repeat"} overflow-hidden border ${isDarkMode ? 'border-sky-800' : 'border-[rgb(186,230,253)]'} rounded-2xl`}>
+        className={`flex h-screen flex-col ${
+          isDarkMode 
+            ? 'bg-gradient-to-br from-slate-900 to-slate-800' 
+            : 'bg-white'
+        } overflow-hidden border ${
+          isDarkMode ? 'border-blue-900' : 'border-blue-100'
+        } rounded-2xl`}>
         <header className="header relative">
           <div className="header-logo">
             {showHistory ? (
               <button
                 type="button"
                 onClick={() => handleBackToChat(false)}
-                className={`${isDarkMode ? 'text-sky-400 hover:text-sky-300' : 'text-sky-400 hover:text-sky-500'} cursor-pointer`}
+                className={`${isDarkMode ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-700'} cursor-pointer`}
                 aria-label="Back to chat">
                 ← Back
               </button>
             ) : (
-              <img src="/icon-128.png" alt="Extension Logo" className="size-6" />
+              <img src="/monarch-logo.svg" alt="Monarch Logo" className="size-6" />
             )}
           </div>
           <div className="header-icons">
@@ -890,7 +1093,7 @@ const SidePanel = () => {
                   type="button"
                   onClick={handleNewChat}
                   onKeyDown={e => e.key === 'Enter' && handleNewChat()}
-                  className={`header-icon ${isDarkMode ? 'text-sky-400 hover:text-sky-300' : 'text-sky-400 hover:text-sky-500'} cursor-pointer`}
+                  className={`header-icon ${isDarkMode ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-700'} cursor-pointer`}
                   aria-label="New Chat"
                   tabIndex={0}>
                   <PiPlusBold size={20} />
@@ -899,25 +1102,26 @@ const SidePanel = () => {
                   type="button"
                   onClick={handleLoadHistory}
                   onKeyDown={e => e.key === 'Enter' && handleLoadHistory()}
-                  className={`header-icon ${isDarkMode ? 'text-sky-400 hover:text-sky-300' : 'text-sky-400 hover:text-sky-500'} cursor-pointer`}
+                  className={`header-icon ${isDarkMode ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-700'} cursor-pointer`}
                   aria-label="Load History"
                   tabIndex={0}>
                   <GrHistory size={20} />
                 </button>
               </>
             )}
-            <a
-              href="https://discord.gg/NN3ABHggMK"
-              target="_blank"
-              rel="noopener noreferrer"
-              className={`header-icon ${isDarkMode ? 'text-sky-400 hover:text-sky-300' : 'text-sky-400 hover:text-sky-500'}`}>
-              <RxDiscordLogo size={20} />
-            </a>
+            <button
+              type="button"
+              onClick={() => {/* Account settings would go here */}}
+              className={`header-icon ${isDarkMode ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-700'} cursor-pointer`}
+              aria-label="Account"
+              tabIndex={0}>
+              <FiUser size={20} />
+            </button>
             <button
               type="button"
               onClick={() => chrome.runtime.openOptionsPage()}
               onKeyDown={e => e.key === 'Enter' && chrome.runtime.openOptionsPage()}
-              className={`header-icon ${isDarkMode ? 'text-sky-400 hover:text-sky-300' : 'text-sky-400 hover:text-sky-500'} cursor-pointer`}
+              className={`header-icon ${isDarkMode ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-700'} cursor-pointer`}
               aria-label="Settings"
               tabIndex={0}>
               <FiSettings size={20} />
@@ -940,9 +1144,9 @@ const SidePanel = () => {
             {/* Show loading state while checking model configuration */}
             {hasConfiguredModels === null && (
               <div
-                className={`flex-1 flex items-center justify-center p-8 ${isDarkMode ? 'text-sky-300' : 'text-sky-600'}`}>
+                className={`flex-1 flex items-center justify-center p-8 ${isDarkMode ? 'text-blue-300' : 'text-blue-600'}`}>
                 <div className="text-center">
-                  <div className="animate-spin w-8 h-8 border-2 border-sky-400 border-t-transparent rounded-full mx-auto mb-4"></div>
+                  <div className="animate-spin w-8 h-8 border-2 border-blue-400 border-t-transparent rounded-full mx-auto mb-4"></div>
                   <p>Checking configuration...</p>
                 </div>
               </div>
@@ -951,11 +1155,11 @@ const SidePanel = () => {
             {/* Show setup message when no models are configured */}
             {hasConfiguredModels === false && (
               <div
-                className={`flex-1 flex items-center justify-center p-8 ${isDarkMode ? 'text-sky-300' : 'text-sky-600'}`}>
+                className={`flex-1 flex items-center justify-center p-8 ${isDarkMode ? 'text-blue-300' : 'text-blue-600'}`}>
                 <div className="text-center max-w-md">
-                  <FiSettings size={48} className={`mx-auto mb-4 ${isDarkMode ? 'text-sky-400' : 'text-sky-500'}`} />
-                  <h3 className={`text-lg font-semibold mb-2 ${isDarkMode ? 'text-sky-200' : 'text-sky-700'}`}>
-                    Welcome to Nanobrowser!
+                  <FiSettings size={48} className={`mx-auto mb-4 ${isDarkMode ? 'text-blue-400' : 'text-blue-500'}`} />
+                  <h3 className={`text-lg font-semibold mb-2 ${isDarkMode ? 'text-blue-200' : 'text-blue-700'}`}>
+                    Welcome to Monarch!
                   </h3>
                   <p className="mb-4">
                     To get started, you need to configure your AI models. The settings page should have opened
@@ -964,20 +1168,10 @@ const SidePanel = () => {
                   <button
                     onClick={() => chrome.runtime.openOptionsPage()}
                     className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                      isDarkMode ? 'bg-sky-600 hover:bg-sky-700 text-white' : 'bg-sky-500 hover:bg-sky-600 text-white'
+                      isDarkMode ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-blue-500 hover:bg-blue-600 text-white'
                     }`}>
                     Open Settings
                   </button>
-                  <div className="mt-4 text-sm opacity-75">
-                    <p>Need help? Check our:</p>
-                    <a
-                      href="https://github.com/nanobrowser/nanobrowser#quick-start"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-sky-400 hover:text-sky-300 underline">
-                      Quick Start Guide
-                    </a>
-                  </div>
                 </div>
               </div>
             )}
@@ -988,7 +1182,7 @@ const SidePanel = () => {
                 {messages.length === 0 && (
                   <>
                     <div
-                      className={`border-t ${isDarkMode ? 'border-sky-900' : 'border-sky-100'} mb-2 p-2 shadow-sm backdrop-blur-sm`}>
+                      className={`border-t ${isDarkMode ? 'border-blue-900' : 'border-blue-100'} mb-2 p-2 shadow-sm backdrop-blur-sm`}>
                       <ChatInput
                         onSendMessage={handleSendMessage}
                         onStopTask={handleStopTask}
@@ -1003,15 +1197,27 @@ const SidePanel = () => {
                         isDarkMode={isDarkMode}
                       />
                     </div>
-                    <div className="flex-1 overflow-y-auto">
-                      <BookmarkList
-                        bookmarks={favoritePrompts}
-                        onBookmarkSelect={handleBookmarkSelect}
-                        onBookmarkUpdateTitle={handleBookmarkUpdateTitle}
-                        onBookmarkDelete={handleBookmarkDelete}
-                        onBookmarkReorder={handleBookmarkReorder}
-                        isDarkMode={isDarkMode}
-                      />
+                    <div className="flex-1 overflow-y-auto px-2">
+                      {/* Mode Selector */}
+                      <ModeSelector />
+                      
+                      {/* Google Workspace Integration */}
+                      <GoogleWorkspaceIntegration />
+                      
+                      {/* Bookmarks/Favorites */}
+                      <div className="mt-6">
+                        <h3 className={`text-lg font-medium mb-3 ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
+                          Saved Prompts
+                        </h3>
+                        <BookmarkList
+                          bookmarks={favoritePrompts}
+                          onBookmarkSelect={handleBookmarkSelect}
+                          onBookmarkUpdateTitle={handleBookmarkUpdateTitle}
+                          onBookmarkDelete={handleBookmarkDelete}
+                          onBookmarkReorder={handleBookmarkReorder}
+                          isDarkMode={isDarkMode}
+                        />
+                      </div>
                     </div>
                   </>
                 )}
@@ -1024,7 +1230,7 @@ const SidePanel = () => {
                 )}
                 {messages.length > 0 && (
                   <div
-                    className={`border-t ${isDarkMode ? 'border-sky-900' : 'border-sky-100'} p-2 shadow-sm backdrop-blur-sm`}>
+                    className={`border-t ${isDarkMode ? 'border-blue-900' : 'border-blue-100'} p-2 shadow-sm backdrop-blur-sm`}>
                     <ChatInput
                       onSendMessage={handleSendMessage}
                       onStopTask={handleStopTask}
@@ -1045,6 +1251,9 @@ const SidePanel = () => {
           </>
         )}
       </div>
+      
+      {/* Google Workspace Connect Modal */}
+      {showWorkspaceConnect && <WorkspaceConnectModal />}
     </div>
   );
 };

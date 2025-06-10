@@ -39,8 +39,8 @@ function withOperaSidebar(manifest) {
   return deepmerge(manifest, {
     sidebar_action: {
       default_panel: 'side-panel/index.html',
-      default_title: 'Nanobrowser',
-      default_icon: 'icon-32.png',
+      default_title: 'Monarch',
+      default_icon: 'icon-32.svg',
     },
   });
 }
@@ -61,17 +61,37 @@ const manifest = withOperaSidebar(
     version: packageJson.version,
     description: '__MSG_extensionDescription__',
     host_permissions: ['<all_urls>'],
-    permissions: ['storage', 'scripting', 'tabs', 'activeTab', 'debugger'],
+    permissions: [
+      'storage', 
+      'scripting', 
+      'tabs', 
+      'activeTab', 
+      'debugger',
+      'identity',
+      'identity.email'
+    ],
+    oauth2: {
+      client_id: "${GOOGLE_CLIENT_ID}",
+      scopes: [
+        "https://www.googleapis.com/auth/userinfo.email",
+        "https://www.googleapis.com/auth/userinfo.profile",
+        "https://www.googleapis.com/auth/gmail.readonly",
+        "https://www.googleapis.com/auth/drive.readonly",
+        "https://www.googleapis.com/auth/calendar.readonly",
+        "https://www.googleapis.com/auth/contacts.readonly"
+      ]
+    },
     options_page: 'options/index.html',
     background: {
       service_worker: 'background.iife.js',
       type: 'module',
     },
     action: {
-      default_icon: 'icon-32.png',
+      default_icon: 'icon-32.svg',
     },
     icons: {
-      128: 'icon-128.png',
+      128: 'icon-128.svg',
+      32: 'icon-32.svg'
     },
     content_scripts: [
       {
@@ -85,8 +105,9 @@ const manifest = withOperaSidebar(
           '*.js',
           '*.css',
           '*.svg',
-          'icon-128.png',
-          'icon-32.png',
+          'icon-128.svg',
+          'icon-32.svg',
+          'monarch-logo.svg',
           'permission/index.html',
           'permission/permission.js',
         ],

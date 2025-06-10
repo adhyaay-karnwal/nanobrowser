@@ -1,165 +1,133 @@
-/* Add this at the top of the file */
-body {
-  border-color: rgb(159, 6, 11) !important; /* sky-200 color */
-}
-
-/* Remove unused classes: .App, .App-logo, .App-header */
-
-code {
-  background: rgba(186, 230, 253, 0.4);
-  border-radius: 0.25rem;
-  padding: 0.2rem 0.5rem;
-  color: #0369a1;
-}
-
-/* Dark mode support for code */
-@media (prefers-color-scheme: dark) {
-  code {
-    background: rgba(30, 58, 138, 0.4);
-    color: #7dd3fc;
-  }
-}
-
-/* Scrollbar styles */
-::-webkit-scrollbar {
-  width: 8px;
-}
-
-::-webkit-scrollbar-track {
-  background: #f1f5f9;
-}
-
-::-webkit-scrollbar-thumb {
-  background: #0ea5e9;
-  border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: #0284c7;
-}
-
-/* Dark mode scrollbar */
-@media (prefers-color-scheme: dark) {
-  ::-webkit-scrollbar-track {
-    background: #1e293b;
-  }
-  
-  ::-webkit-scrollbar-thumb {
-    background: #0ea5e9;
-  }
-  
-  ::-webkit-scrollbar-thumb:hover {
-    background: #38bdf8;
-  }
-}
-
-/* Used classes from the component */
 .header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.75rem;
-  background-color: transparent;
-  border-bottom: 1px solid rgba(14, 165, 233, 0.2);
-}
-
-/* Dark mode header border */
-@media (prefers-color-scheme: dark) {
-  .header {
-    border-bottom: 1px solid rgba(14, 165, 233, 0.3);
-  }
+  @apply sticky top-0 z-10 flex items-center justify-between bg-transparent p-2 backdrop-blur-sm;
+  border-bottom: 1px solid; /* Dynamic border color will be applied via JS/TSX */
 }
 
 .header-logo {
-  display: flex;
-  align-items: center;
+  @apply flex items-center gap-2;
 }
 
 .header-icons {
-  display: flex;
-  gap: 0.75rem;
-  align-items: center;
+  @apply flex items-center gap-2;
 }
 
 .header-icon {
-  color: #19C2FF;
-  cursor: pointer;
-  transition: color 0.2s ease;
-  opacity: 0.8;
+  @apply cursor-pointer rounded-md p-1.5 transition-colors;
+  /* Specific colors are applied in TSX based on dark/light mode */
 }
 
-.header-icon:hover {
-  color: #0073DC;
-  opacity: 1;
-}
-
-.send-button {
-  color: #19C2FF;
-  cursor: pointer;
-  transition: color 0.2s ease;
-  opacity: 0.8;
-}
-
-.send-button:hover {
-  color: #0073DC;
-  opacity: 1;
-}
-
-.send-button:disabled {
-  color: #CBD5E1;
-  cursor: not-allowed;
-  opacity: 0.5;
-}
-
-/* Add these styles to your existing CSS */
+/* Ensure scrollbar is always visible to prevent layout shifts */
 .scrollbar-gutter-stable {
   scrollbar-gutter: stable;
 }
 
-/* Optional: Style the scrollbar for webkit browsers */
+/* Custom scrollbar styles for WebKit browsers (Chrome, Safari) */
 .scrollbar-gutter-stable::-webkit-scrollbar {
-  width: 8px;
+  @apply w-2; /* Width of the scrollbar */
 }
 
 .scrollbar-gutter-stable::-webkit-scrollbar-track {
-  background: #f1f5f9;  /* sky-50 */
+  @apply bg-transparent; /* Background of the scrollbar track */
 }
 
 .scrollbar-gutter-stable::-webkit-scrollbar-thumb {
-  background: #7dd3fc;  /* sky-300 - very light blue */
-  border-radius: 4px;
+  @apply rounded-full bg-blue-400; /* Color of the scrollbar thumb */
 }
 
-.scrollbar-gutter-stable::-webkit-scrollbar-thumb:hover {
-  background: #38bdf8;  /* sky-400 - slightly darker on hover */
+.scrollbar-gutter-stable:hover::-webkit-scrollbar-thumb {
+  @apply bg-blue-500; /* Color of the scrollbar thumb on hover */
 }
 
-/* Dark mode scrollbar for scrollbar-gutter-stable */
-@media (prefers-color-scheme: dark) {
-  .scrollbar-gutter-stable::-webkit-scrollbar-track {
-    background: #1e293b;  /* slate-800 */
-  }
-  
-  .scrollbar-gutter-stable::-webkit-scrollbar-thumb {
-    background: #0ea5e9;  /* sky-500 */
-  }
-  
-  .scrollbar-gutter-stable::-webkit-scrollbar-thumb:hover {
-    background: #38bdf8;  /* sky-400 */
-  }
+/* Dark mode scrollbar styles */
+.dark .scrollbar-gutter-stable::-webkit-scrollbar-thumb {
+  @apply bg-blue-600; /* Dark mode scrollbar thumb color */
 }
 
-/* Dark mode text and background colors */
-@media (prefers-color-scheme: dark) {
-  .dark-mode-text {
-    color: #e2e8f0 !important; /* slate-200 */
-  }
-  
-  .dark-mode-bg {
-    background-color: #1e293b !important; /* slate-800 */
-  }
-  
-  .dark-mode-border {
-    border-color: #475569 !important; /* slate-600 */
-  }
+.dark .scrollbar-gutter-stable:hover::-webkit-scrollbar-thumb {
+  @apply bg-blue-500; /* Dark mode scrollbar thumb color on hover */
+}
+
+/* Styles for the ChatInput component (generic, specific styling in TSX) */
+.chat-input-form {
+  @apply overflow-hidden rounded-lg border transition-colors;
+  /* Border color typically handled by focus-within and dark mode classes in TSX */
+}
+
+.chat-input-textarea {
+  @apply w-full resize-none border-none p-2 focus:outline-none;
+  /* Background and text color handled by dark mode classes in TSX */
+}
+
+.chat-input-controls {
+  @apply flex items-center justify-between px-2 py-1.5;
+  /* Background color handled by dark mode classes in TSX */
+}
+
+.chat-input-mic-button {
+  @apply rounded-md p-1.5 transition-colors;
+  /* Colors handled by recording/disabled/dark mode states in TSX */
+}
+
+.chat-input-send-button {
+  @apply rounded-md px-3 py-1 text-white transition-colors;
+  /* Background color and disabled states handled in TSX */
+}
+
+/* Styles for MessageList and MessageItem */
+.message-list {
+  @apply flex flex-col gap-3;
+}
+
+.message-item {
+  @apply flex flex-col gap-1 rounded-lg p-3 shadow-sm;
+}
+
+.message-actor {
+  @apply text-xs font-semibold;
+}
+
+.message-content {
+  @apply whitespace-pre-wrap text-sm;
+}
+
+.message-timestamp {
+  @apply text-right text-xs opacity-60;
+}
+
+/* Specific styles for different actors */
+.message-item-USER {
+  @apply self-end bg-blue-100 dark:bg-blue-800/70; /* Using a semi-transparent dark blue for dark mode */
+  max-width: 90%;
+}
+
+.message-item-SYSTEM {
+  @apply self-start border border-blue-300 bg-white dark:border-blue-700 dark:bg-slate-800;
+  max-width: 90%;
+}
+
+.message-item-PLANNER,
+.message-item-NAVIGATOR,
+.message-item-VALIDATOR {
+  @apply self-start border border-blue-300 bg-white dark:border-blue-700 dark:bg-slate-800;
+  max-width: 90%;
+}
+
+.message-actor-USER {
+  @apply text-blue-700 dark:text-blue-300;
+}
+
+.message-actor-SYSTEM {
+  @apply text-slate-600 dark:text-slate-400; /* Keeping slate for system, distinct from user */
+}
+
+.message-actor-PLANNER {
+  @apply text-purple-600 dark:text-purple-400; /* Keeping distinct color */
+}
+
+.message-actor-NAVIGATOR {
+  @apply text-green-600 dark:text-green-400; /* Keeping distinct color */
+}
+
+.message-actor-VALIDATOR {
+  @apply text-orange-600 dark:text-orange-400; /* Keeping distinct color */
 }

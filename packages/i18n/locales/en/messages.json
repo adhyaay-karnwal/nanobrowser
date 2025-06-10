@@ -1,11 +1,11 @@
 {
   "extensionDescription": {
     "description": "Extension description",
-    "message": "Automate web tasks with AI! NanoBrowser is an open-source Chrome extension that lets you extract data, fill forms, and more."
+    "message": "Enhance productivity with Monarch, a professional AI assistant that integrates with Google Workspace to automate tasks, analyze documents, and streamline your workflow."
   },
   "extensionName": {
     "description": "Extension name",
-    "message": "Nanobrowser: AI Web Agent & Automation"
+    "message": "Monarch: Professional AI Assistant"
   },
   "toggleTheme": {
     "message": "Toggle theme"
