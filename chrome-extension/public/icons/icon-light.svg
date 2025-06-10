@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <defs>
+    <linearGradient id="crownLightGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#A0D2EB; stop-opacity:1"/> <!-- Light Sky Blue -->
+      <stop offset="100%" style="stop-color:#E0F7FA; stop-opacity:1"/> <!-- Very Light Cyan / Almost White -->
+    </linearGradient>
+  </defs>
+  
+  <!-- Crown Body -->
+  <path d="M5,28 H27 V23 L25,23 L21,13 L19,23 L17,23 L16,8 L15,23 L13,23 L11,13 L7,23 L5,23 V28Z" fill="url(#crownLightGradient)" stroke="#87CEEB" stroke-width="0.75" stroke-linejoin="round"/>
+  
+  <!-- Gemstones -->
+  <circle cx="11" cy="13.5" r="1.5" fill="#FFFFFF" stroke="#87CEEB" stroke-width="0.5"/>
+  <circle cx="16" cy="8.5" r="2" fill="#FFFFFF" stroke="#87CEEB" stroke-width="0.5"/>
+  <circle cx="21" cy="13.5" r="1.5" fill="#FFFFFF" stroke="#87CEEB" stroke-width="0.5"/>
+</svg>

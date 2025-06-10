@@ -1,4 +1,4 @@
-console.log('content loaded');
+console.log('Monarch content script loaded'); // Changed from nanobrowser
 
 /**
  * Injects the buildDomTree.js script into the current page.
@@ -8,9 +8,9 @@ try {
   const script = document.createElement('script');
   script.src = chrome.runtime.getURL('buildDomTree.js');
   (document.head || document.documentElement).appendChild(script);
-  console.log('buildDomTree.js injected');
+  console.log('Monarch: buildDomTree.js injected'); // Changed from nanobrowser
 } catch (e) {
-  console.error('Failed to inject buildDomTree.js:', e);
+  console.error('Monarch: Failed to inject buildDomTree.js:', e); // Changed from nanobrowser
 }
 
 const HIGHLIGHT_OVERLAY_ID = 'monarch-highlight-overlay'; // Changed from nanobrowser-highlight-overlay
@@ -35,7 +35,7 @@ function highlightElement(element: HTMLElement) {
   const rect = element.getBoundingClientRect();
   const highlightDiv = document.createElement('div');
   highlightDiv.id = HIGHLIGHT_OVERLAY_ID;
-  // Updated styles for Monarch theme
+  // Updated styles for Monarch theme (already done in previous step, confirmed)
   highlightDiv.style.cssText = `
     position: fixed;
     left: ${rect.left + window.scrollX}px;
@@ -88,7 +88,7 @@ function getClickableElement(element: HTMLElement): HTMLElement | null {
 }
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  console.log('content script received message:', request);
+  console.log('Monarch content script received message:', request); // Changed from nanobrowser
 
   if (request.action === 'highlight_elements') {
     cleanupHighlights(); // Clear previous highlights
@@ -104,10 +104,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             firstElement = element;
           }
         } else {
-          console.warn(`Element not found or not visible for selector: ${selector}`);
+          console.warn(`Monarch: Element not found or not visible for selector: ${selector}`); // Changed
         }
       } catch (error) {
-        console.error(`Error finding element for selector ${selector}:`, error);
+        console.error(`Monarch: Error finding element for selector ${selector}:`, error); // Changed
       }
     });
 
@@ -218,7 +218,7 @@ function getElementBySelectorOrXpath(selectorOrXpath: string): HTMLElement | nul
     if (element) return element;
   } catch (e) {
     // querySelector might fail with complex XPaths, so we ignore the error and try XPath
-    // console.warn('Failed to use querySelector, trying XPath:', e);
+    // console.warn('Monarch: Failed to use querySelector, trying XPath:', e); // Changed
   }
 
   try {
@@ -234,7 +234,7 @@ function getElementBySelectorOrXpath(selectorOrXpath: string): HTMLElement | nul
       return xpathResult.singleNodeValue as HTMLElement;
     }
   } catch (e) {
-    console.error('Failed to evaluate XPath:', e);
+    console.error('Monarch: Failed to evaluate XPath:', e); // Changed
   }
 
   return null;
